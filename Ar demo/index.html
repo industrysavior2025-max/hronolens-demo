@@ -1,0 +1,236 @@
+{\rtf1\ansi\ansicpg950\cocoartf2822
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\fnil\fcharset136 PingFangHK-Regular;\f2\fnil\fcharset0 AppleColorEmoji;
+}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 <!DOCTYPE html>\
+<html lang="zh-HK">\
+<head>\
+  <meta charset="UTF-8">\
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">\
+  <title>ChronoLens WebAR - 
+\f1 \'ad\'f0\'a5\'4e\'b2\'a1\'be\'b9
+\f0 </title>\
+  \
+  <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>\
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>\
+  \
+  <style>\
+    body \{ margin: 0; overflow: hidden; font-family: 'Arial', sans-serif; \}\
+    \
+    /* UI: Intro Screen */\
+    #intro-screen \{\
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;\
+      background: linear-gradient(135deg, #2c3e50 0%, #4ca1af 100%);\
+      display: flex; flex-direction: column; align-items: center; justify-content: center;\
+      z-index: 1000; color: white; padding: 20px; box-sizing: border-box;\
+      transition: opacity 0.5s;\
+    \}\
+    #intro-screen.hidden \{ opacity: 0; pointer-events: none; \}\
+    \
+    .intro-logo \{ font-size: 42px; font-weight: bold; margin-bottom: 10px; text-shadow: 0 4px 6px rgba(0,0,0,0.3); \}\
+    .start-button \{\
+      background: white; color: #2c3e50; border: none; padding: 15px 40px;\
+      font-size: 18px; font-weight: bold; border-radius: 50px; cursor: pointer;\
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2); margin-top: 30px;\
+    \}\
+\
+    /* UI: Color Palette */\
+    #ui-overlay \{ position: fixed; bottom: 20px; left: 0; width: 100%; z-index: 100; pointer-events: none; display: none; \}\
+    #color-palette \{\
+      display: flex; justify-content: center; gap: 15px; pointer-events: auto;\
+      background: rgba(0,0,0,0.6); padding: 15px; border-radius: 30px; margin: 0 20px;\
+      backdrop-filter: blur(5px);\
+    \}\
+    .color-btn \{\
+      width: 45px; height: 45px; border-radius: 50%; border: 3px solid white;\
+      cursor: pointer; transition: transform 0.2s;\
+    \}\
+    .color-btn:active \{ transform: scale(0.8); \}\
+    .color-btn.selected \{ transform: scale(1.2); border-color: #FFD700; box-shadow: 0 0 10px #FFD700; \}\
+\
+    /* UI: Status */\
+    #status-msg \{\
+      position: fixed; top: 20px; left: 50%; transform: translateX(-50%);\
+      background: rgba(0, 0, 0, 0.7); color: white; padding: 10px 20px;\
+      border-radius: 20px; z-index: 99; display: none; font-size: 14px;\
+      backdrop-filter: blur(4px); white-space: nowrap;\
+    \}\
+    \
+    /* UI: Scanning Hint */\
+    #scan-overlay \{\
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;\
+      pointer-events: none; display: none; z-index: 90;\
+      border: 30px solid rgba(0,0,0,0.5); box-sizing: border-box;\
+    \}\
+    #scan-overlay::after \{\
+      content: '
+\f1 \'bd\'d0\'b1\'bd\'b4\'79\'ad\'f0\'a5\'4e\'b2\'a1\'be\'b9\'b9\'cf\'a4\'f9
+\f0 ';\
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);\
+      color: rgba(255,255,255,0.7); font-size: 18px; font-weight: bold;\
+    \}\
+  </style>\
+</head>\
+<body>\
+\
+  <div id="intro-screen">\
+    <div class="intro-logo">
+\f2 \uc0\u55356 \u57338 
+\f0  ChronoLens</div>\
+    <div style="font-size: 18px; opacity: 0.9;">WebAR Experience</div>\
+    <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; margin-top: 20px; max-width: 300px;">\
+      <p>1. 
+\f1 \'a4\'b9\'b3\'5c\'ac\'db\'be\'f7\'c5\'76\'ad\'ad
+\f0 </p>\
+      <p>2. 
+\f1 \'b9\'ef\'b7\'c7\'ad\'f0\'a5\'4e\'b2\'a1\'be\'b9\'b7\'d3\'a4\'f9
+\f0 </p>\
+      <p>3. 
+\f1 \'c5\'e9\'c5\'e7\'b5\'ea\'c0\'c0\'a4\'57\'a6\'e2\'a5\'5c\'af\'e0
+\f0 </p>\
+    </div>\
+    <button class="start-button" onclick="startExperience()">
+\f1 \'b6\'7d\'a9\'6c\'c5\'e9\'c5\'e7
+\f0  (Start)</button>\
+  </div>\
+\
+  <div id="status-msg">
+\f1 \'aa\'ec\'a9\'6c\'a4\'c6
+\f0  AR 
+\f1 \'a4\'de\'c0\'ba
+\f0 ...</div>\
+  <div id="scan-overlay"></div>\
+\
+  <a-scene \
+    mindar-image="imageTargetSrc: ./targets.mind; autoStart: false; uiLoading: no; uiScanning: no;" \
+    color-space="sRGB" \
+    renderer="colorManagement: true, physicallyCorrectLights: true" \
+    vr-mode-ui="enabled: false" \
+    device-orientation-permission-ui="enabled: false">\
+\
+    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>\
+\
+    <a-entity id="target-entity" mindar-image-target="targetIndex: 0">\
+      \
+      <a-entity \
+        id="vase-model" \
+        rotation="0 0 0" \
+        position="0 -0.5 0" \
+        scale="0.5 0.5 0.5"\
+        animation="property: rotation; to: 0 360 0; dur: 20000; easing: linear; loop: true">\
+\
+        <a-cylinder id="part-base" position="0 0.5 0" radius="0.4" height="1.0" color="#F5F5DC" \
+                    material="roughness: 0.2; metalness: 0.1;"></a-cylinder>\
+        \
+        <a-sphere id="part-belly" position="0 0.5 0" radius="0.5" scale="1 1.8 1" color="#F5F5DC" \
+                  material="roughness: 0.2; metalness: 0.1;"></a-sphere>\
+        \
+        <a-cylinder id="part-neck" position="0 1.5 0" radius="0.18" height="0.8" color="#F5F5DC" \
+                    material="roughness: 0.2; metalness: 0.1;"></a-cylinder>\
+        \
+        <a-torus id="part-rim" position="0 1.9 0" rotation="90 0 0" radius="0.2" radius-tubular="0.03" color="#DEB887"\
+                 material="roughness: 0.3; metalness: 0.2;"></a-torus>\
+\
+        <a-torus position="0 1.2 0" rotation="90 0 0" radius="0.2" radius-tubular="0.02" color="#8B4513"></a-torus>\
+        <a-torus position="0 0.8 0" rotation="90 0 0" radius="0.48" radius-tubular="0.02" color="#8B4513"></a-torus>\
+\
+      </a-entity> <a-light type="directional" position="1 2 1" intensity="1.2"></a-light>\
+      <a-light type="ambient" intensity="0.6"></a-light>\
+\
+    </a-entity>\
+  </a-scene>\
+\
+  <div id="ui-overlay">\
+    <div id="color-palette">\
+      <div class="color-btn selected" style="background: #F5F5DC;" onclick="setColor('#F5F5DC', this)"></div>\
+      <div class="color-btn" style="background: #e74c3c;" onclick="setColor('#e74c3c', this)"></div>\
+      <div class="color-btn" style="background: #3498db;" onclick="setColor('#3498db', this)"></div>\
+      <div class="color-btn" style="background: #2ecc71;" onclick="setColor('#2ecc71', this)"></div>\
+      <div class="color-btn" style="background: #9b59b6;" onclick="setColor('#9b59b6', this)"></div>\
+    </div>\
+  </div>\
+\
+  <script>\
+    const sceneEl = document.querySelector('a-scene');\
+    const arSystem = sceneEl.systems['mindar-image-system'];\
+    const statusMsg = document.getElementById('status-msg');\
+    const introScreen = document.getElementById('intro-screen');\
+    const uiOverlay = document.getElementById('ui-overlay');\
+    const scanOverlay = document.getElementById('scan-overlay');\
+    const targetEntity = document.getElementById('target-entity');\
+\
+    // 1. Start Experience Logic\
+    function startExperience() \{\
+      introScreen.classList.add('hidden');\
+      statusMsg.style.display = 'block';\
+      statusMsg.innerText = "
+\f1 \'a5\'bf\'a6\'62\'b1\'d2\'b0\'ca\'ac\'db\'be\'f7
+\f0 ... (Starting Camera)";\
+      \
+      // Manually start MindAR\
+      sceneEl.addEventListener('arReady', () => \{\
+        statusMsg.innerText = "
+\f1 \'b7\'c7\'b3\'c6\'b4\'4e\'ba\'fc\'a1\'49\'bd\'d0\'b1\'bd\'b4\'79\'b9\'cf\'a4\'f9
+\f0 ";\
+        scanOverlay.style.display = 'block';\
+      \});\
+\
+      sceneEl.addEventListener('arError', (event) => \{\
+        statusMsg.innerText = "
+\f1 \'ac\'db\'be\'f7\'b1\'d2\'b0\'ca\'a5\'a2\'b1\'d1
+\f0  (
+\f1 \'bd\'d0\'a8\'cf\'a5\'ce
+\f0  HTTPS)";\
+        console.error("AR Error:", event);\
+      \});\
+\
+      // Start the AR engine\
+      arSystem.start();\
+    \}\
+\
+    // 2. Tracking Events\
+    targetEntity.addEventListener('targetFound', () => \{\
+      console.log("Target Found");\
+      statusMsg.innerText = "
+\f2 \uc0\u9989 
+\f0  
+\f1 \'b0\'bb\'b4\'fa\'a8\'ec\'b2\'a1\'be\'b9
+\f0  (Detected)";\
+      statusMsg.style.background = "rgba(46, 204, 113, 0.8)";\
+      scanOverlay.style.display = 'none';\
+      uiOverlay.style.display = 'block'; // Show colors when found\
+    \});\
+\
+    targetEntity.addEventListener('targetLost', () => \{\
+      console.log("Target Lost");\
+      statusMsg.innerText = "
+\f2 \uc0\u55357 \u56589 
+\f0  
+\f1 \'bd\'d0\'b9\'ef\'b7\'c7\'b9\'cf\'a4\'f9
+\f0  (Scanning...)";\
+      statusMsg.style.background = "rgba(0, 0, 0, 0.7)";\
+      scanOverlay.style.display = 'block';\
+      uiOverlay.style.display = 'none'; // Hide colors when lost\
+    \});\
+\
+    // 3. Coloring Logic\
+    function setColor(colorCode, btnElement) \{\
+      // Change color of main vase parts\
+      const parts = ['part-base', 'part-belly', 'part-neck'];\
+      parts.forEach(id => \{\
+        const el = document.getElementById(id);\
+        if(el) el.setAttribute('color', colorCode);\
+      \});\
+\
+      // Update UI selection state\
+      document.querySelectorAll('.color-btn').forEach(btn => btn.classList.remove('selected'));\
+      btnElement.classList.add('selected');\
+    \}\
+  </script>\
+\
+</body>\
+</html>}
